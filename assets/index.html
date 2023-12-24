@@ -114,7 +114,8 @@
 
         const services = [...select.selectedOptions].map(x => x.value);
         const servicesJSON = encodeURIComponent(JSON.stringify(services));
-        socket = new WebSocket(`ws://${window.location.host}${window.location.pathname.replace(/\/[^\/]*$/, "")}/ws?services=${servicesJSON}`);
+        const wsprotocol = (window.location.protocol == "https:") ? "wss" : "ws";
+        socket = new WebSocket(`${wsprotocol}://${window.location.host}${window.location.pathname.replace(/\/[^\/]*$/, "")}/ws?services=${servicesJSON}`);
 
         socket.onopen = function (e) {
           console.log(`[open] Connection established with service: ${select.value}`);

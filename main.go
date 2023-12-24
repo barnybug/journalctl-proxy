@@ -7,17 +7,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/fs"
+	"log"
+	"net/http"
+	"os/exec"
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/websocket/v2"
-	"io/fs"
-	"log"
-	"net/http"
-	"os/exec"
-	"strings"
 )
 
 //go:embed assets
@@ -27,11 +28,13 @@ func main() {
 	var port int
 	var username, password string
 	var docker bool
+	var user bool
 
 	flag.IntVar(&port, "p", 8000, "Server port number")
 	flag.StringVar(&username, "au", "", "Username for basic auth")
 	flag.StringVar(&password, "ap", "", "Password for basic auth")
 	flag.BoolVar(&docker, "docker", false, "Add container names for Docker scopes (with journald logging driver)")
+	flag.BoolVar(&user, "u", false, "User logs")
 	flag.Parse()
 
 	app := fiber.New(fiber.Config{
@@ -60,7 +63,11 @@ func main() {
 	}))
 
 	app.Get("/list-services", func(c *fiber.Ctx) error {
-		out, err := exec.Command("systemctl", "list-units", "--type=service", "--state=running", "--no-pager").Output()
+		args := []string{"list-units", "--type=service", "--plain", "--no-pager"}
+		if user {
+			args = append(args, "--user")
+		}
+		out, err := exec.Command("systemctl", args...).Output()
 
 		if err != nil {
 			fmt.Printf("%s", err)
@@ -104,9 +111,14 @@ func main() {
 		json.Unmarshal([]byte(c.Query("services")), &services)
 
 		args := []string{"-b"}
+		if user {
+			args = append(args, "--user")
+		}
 		for _, service := range services {
 			if docker && strings.HasSuffix(service, ".docker") {
 				args = append(args, "CONTAINER_ID_FULL="+strings.TrimSuffix(service, ".docker"), "+")
+			} else if user {
+				args = append(args, "_SYSTEMD_USER_UNIT="+service, "+")
 			} else {
 				args = append(args, "_SYSTEMD_UNIT="+service, "+")
 			}

@@ -132,7 +132,7 @@
           const message = document.createElement('td');
 
           pid.innerText = incomingMessage._PID;
-          systemdUnit.innerText = incomingMessage.CONTAINER_NAME ? incomingMessage.CONTAINER_NAME + ".docker" : incomingMessage._SYSTEMD_UNIT;
+          systemdUnit.innerText = incomingMessage.CONTAINER_NAME ? incomingMessage.CONTAINER_NAME + ".docker" : (incomingMessage._SYSTEMD_USER_UNIT !== null ? incomingMessage._SYSTEMD_USER_UNIT : incomingMessage._SYSTEMD_UNIT);
           realtimeTimestamp.innerText = new Date(incomingMessage.__REALTIME_TIMESTAMP/1000).toISOString();
           const text = typeof incomingMessage.MESSAGE == "string" ? incomingMessage.MESSAGE : new TextDecoder("utf-8").decode(Uint8Array.from(incomingMessage.MESSAGE));;
           message.innerHTML = ansi_up.ansi_to_html(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));

@@ -63,11 +63,13 @@ func main() {
 	}))
 
 	app.Get("/list-services", func(c *fiber.Ctx) error {
-		args := []string{"list-units", "--type=service", "--plain", "--no-pager"}
+		var args []string
 		if user {
-			args = append(args, "--user")
+			args = []string{"journalctl", "--user", "-F", "_SYSTEMD_USER_UNIT", "--no-pager"}
+		} else {
+			args = []string{"systemctl", "list-units", "--type=service", "--plain", "--no-pager"}
 		}
-		out, err := exec.Command("systemctl", args...).Output()
+		out, err := exec.Command(args[0], args[1:]...).Output()
 
 		if err != nil {
 			fmt.Printf("%s", err)
@@ -91,7 +93,7 @@ func main() {
 			}
 		}
 
-		return c.SendString(outStr)
+		return c.Status(200).SendString(outStr)
 	})
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
